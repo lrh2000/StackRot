@@ -8,7 +8,7 @@ the end of July. [The oss-security thread][oss] will be notified, and any
 updates will be reflected in this GitHub repository.**
 
  [po]: https://oss-security.openwall.org/wiki/mailing-lists/distros
- [oss]: https://www.openwall.com/lists/oss-security/
+ [oss]: https://www.openwall.com/lists/oss-security/2023/07/05/1
 
 A flaw was found in the handling of stack expansion in the Linux kernel 6.1
 through 6.4, aka "Stack Rot". The maple tree, responsible for managing virtual
