@@ -242,7 +242,7 @@ Following that, the process of addressing this bug was led by Linus Torvalds.
 Given its complexity, it took nearly two weeks to develop a set of patches that
 received consensus.
 
-On June 28th, during the merge window for Linux kernel 5.5, the fix was merged
+On June 28th, during the merge window for Linux kernel 6.5, the fix was merged
 into Linus' tree. Linus provided a [comprehensive merge message][fix] to
 elucidate the patch series from a technical perspective.
 
