@@ -216,7 +216,7 @@ The backtrace where use-after-free (UAF) occurs is shown below:
       mas_store_prealloc()                              mas_state_walk()
         mas_wr_story_entry()                              mas_start()
           mas_wr_modify()                                   mas_root()
-            mas_wr_store_node()                               node = rcu_dereference_check()
+            mas_wr_node_store()                               node = rcu_dereference_check()
               mas_replace()                                   [ The node pointer is recorded ]
                 mas_free()
                   ma_free_rcu()
