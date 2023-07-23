@@ -521,3 +521,8 @@ The gadget constructions are as follows:
 
 Finally, using `nsenter --mount=/proc/1/ns/mnt` to restore the mount namespace
 and get the flag via `cat /flag/flag`.
+
+### Source code
+
+The full exploit source is available [here](/exp). For more details, refer to
+its README file.
