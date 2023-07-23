@@ -90,10 +90,17 @@ the codebase and introduces the StackRot vulnerability.
 
  [mt]: https://docs.kernel.org/6.4/core-api/maple_tree.html
 
-In essence, the maple tree is composed of maple nodes. Throughout this article,
-it is assumed that the maple tree has only a single root node, which can
-contain a maximum of 16 intervals. Each interval can either represent a gap or
-point to a VMA. Thus, no gaps are allowed between two intervals.
+At its core, a maple tree is made up of maple nodes. While the tree's structure
+may be complex, it's important to note that this complexity has nothing to do
+with the StackRot bug. Therefore, throughout this article, it is assmued that
+the maple tree consists of only one node, i.e., the root node.
+
+This root node can contain up to 16 intervals. These intervals may either
+represent a gap or point to a VMA. As gaps also count as intervals, all
+intervals are connected sequentially, resulting in the need for only 15
+endpoints, also known as pivots, within the node's structure. Note that the
+leftmost endpoint and the rightmost endpoint are omitted, as they can be
+retrieved from the parent node.
 
 ```c
 struct maple_range_64 {
@@ -113,10 +120,12 @@ struct maple_range_64 {
 };
 ```
 
-The structure `maple_range_64` represents a maple node in the following manner.
-The pivots indicate the endpoints of 16 intervals, while the slots are used to
-reference the VMA structure when the node is considered a leaf node. The layout
-of pivots and slots can be visualized as shown below:
+The `maple_range_64` structure, as shown above, represents a maple node. In
+addition to the pivots, the slots are used to refer to the VMA structure when
+the node functions as a leaf node, or to other maple nodes when the node
+functions as an interior node. If an interval corresponds to a gap, the slot
+will simply contain a NULL value. The arrangement of pivot points and slots can
+be visualized as illustrated below:
 
 ```
  Slots -> | 0 | 1 | 2 | ... | 12 | 13 | 14 | 15 |
@@ -132,16 +141,16 @@ of pivots and slots can be visualized as shown below:
           └─  Implied minimum
 ```
 
-Regarding concurrent modification, the maple tree imposes restrictions,
-requiring an exclusive lock to be held by writers. In the case of the VMA tree,
-the exclusive lock corresponds to the MM write lock. As for readers, two
-options are available. The first option involves holding the MM read lock,
-which results in the writer being blocked by the MM read-write lock.
-Alternatively, the second option is to enter the RCU critical section. By doing
-so, the writer is not blocked, and readers can continue their operations since
-the maple tree is RCU-safe. While most existing VMA accesses opt for the first
-option, the second option is employed in a few performance-critical scenarios,
-such as lockless page faults.
+Regarding concurrent modification, the maple tree imposes a specific
+restriction, that is, an exclusive lock must be held by writers (*Rule W*). In
+the case of the VMA tree, the exclusive lock corresponds to the MM write lock.
+As for readers, two options are available. The first option involves holding
+the MM read lock (*Rule A1*), which results in the writer being blocked by the
+MM read-write lock. Alternatively, the second option is to enter the RCU
+critical section (*Rule A2*). By doing so, the writer is not blocked, and
+readers can continue their operations since the maple tree is RCU-safe. While
+most existing VMA accesses opt for the first option (i.e., Rule A1), Rule A2 is
+employed in a few performance-critical scenarios, such as lockless page faults.
 
 However, there is an additional aspect that requires particular attention,
 which pertains to stack expansion. The stack represents a memory area that is
@@ -175,11 +184,7 @@ Typically, a gap exists between the stack VMA and its neighboring VMA, as the
 kernel enforces a stack guard. In this scenario, when expanding the stack, only
 the pivot value in the maple node needs updating, a process that can be
 performed atomically. However, if the neighboring VMA also possesses the
-MAP_GROWSDOWN flag, no stack guard is enforced. Consequently, the stack
-expansion can eliminate the gap. In such situations, the gap interval within
-the maple node must be removed. As the maple tree is RCU-safe, overwriting the
-node in-place is not possible. Instead, a new node is created, triggering node
-replacement, and the old node is subsequently destroyed using an RCU callback.
+MAP_GROWSDOWN flag, no stack guard is enforced.
 
 ```c
 int expand_downwards(struct vm_area_struct *vma, unsigned long address)
@@ -197,13 +202,34 @@ int expand_downwards(struct vm_area_struct *vma, unsigned long address)
 }
 ```
 
+As a result, the stack expansion can eliminate the gap. In such situations, the
+gap interval within the maple node must be removed. As the maple tree is
+RCU-safe, overwriting the node in-place is not possible. Instead, a new node is
+created, triggering node replacement, and the old node is subsequently
+destroyed using an RCU callback.
+
+```c
+static inline void mas_wr_modify(struct ma_wr_state *wr_mas)
+{
+	// ...
+
+	if ((wr_mas->offset_end - mas->offset <= 1) &&
+	    mas_wr_slot_store(wr_mas))           // <-- in-place update
+		return;
+	else if (mas_wr_node_store(wr_mas))      // <-- node replacement
+		return;
+
+	// ...
+}
+```
+
 The RCU callback is invoked only after all pre-existing RCU critical sections
 have concluded. However, the issue arises when accessing VMAs, as only the MM
-read lock is held, and it does not enter the RCU critical section.
-Consequently, in theory, the callback could be invoked at any time, resulting
-in the freeing of the old maple node. However, pointers to the old node may
-have already been fetched, leading to a use-after-free bug when attempting
-subsequent access to it.
+read lock is held, and it does not enter the RCU critical section (according to
+Rule A1). Consequently, in theory, the callback could be invoked at any time,
+resulting in the freeing of the old maple node. However, pointers to the old
+node may have already been fetched, leading to a use-after-free bug when
+attempting subsequent access to it.
 
 The backtrace where use-after-free (UAF) occurs is shown below:
 
