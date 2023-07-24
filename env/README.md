@@ -10,3 +10,5 @@ File information:
    - https://storage.googleapis.com/kctf-vrp-public-files/bzImage_upstream_6.1.25
  - `bzImage_upstream_6.1.25_config` was downloaded from:
    - https://storage.googleapis.com/kctf-vrp-public-files/bzImage_upstream_6.1.25_config
+ - `initramfs.cpio.gz` was built from scratch because Google kCTF VRP does not
+   provide the disk image it uses.

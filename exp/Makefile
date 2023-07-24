@@ -1,4 +1,4 @@
-TARGET     := exploit
+TARGET     := ../env/exp/exploit
 LINKSCRIPT := linkscript.lds
 
 CC      := gcc
@@ -29,12 +29,28 @@ SOURCES := \
 	utils/string.h
 
 ECHO    := echo -e '\t'
+TEE     := tee
+GREP    := grep -oha
 
 RM      := rm -f
 
 CFMT    := clang-format
 CFMTFIX := $(CFMT) -i
 CFMTCHK := $(CFMT) -n --Werror
+
+KVM     ?= -enable-kvm
+
+QEMU    := qemu-system-x86_64
+QFLAGS  := \
+	-m 3G -smp 2 $(KVM) \
+	-kernel ../env/bzImage_upstream_6.1.25 \
+	-initrd ../env/initramfs.cpio.gz \
+	-append "init=/init console=ttyS0 panic_on_warn=1" \
+	-virtfs local,path=../env/exp,mount_tag=exp,security_model=none \
+	-nographic -no-reboot
+
+OUT     := ../env/run.out
+FLAG    := 'flag{[a-zA-Z0-9_-]*}'
 
 .PHONY:
 all: $(TARGET)
@@ -47,6 +63,8 @@ $(TARGET): $(SOURCES) $(LINKSCRIPT)
 clean:
 	@$(ECHO) RM $(TARGET)
 	@$(RM) $(TARGET)
+	@$(ECHO) RM $(OUT)
+	@$(RM) $(OUT)
 
 .PHONY:
 fmt:
@@ -57,3 +75,10 @@ fmt:
 check:
 	@$(ECHO) CHECK $(SOURCES)
 	@$(CFMTCHK) $(SOURCES)
+
+.PHONY:
+run: $(TARGET)
+	@$(ECHO) QEMU $(TARGET)
+	@$(QEMU) $(QFLAGS) | $(TEE) $(OUT)
+	@$(ECHO) SEARCH FLAG
+	@$(GREP) $(FLAG) $(OUT)

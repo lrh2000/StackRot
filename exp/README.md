@@ -9,11 +9,20 @@ used to acquire root privileges and escape sandboxes in the Google kCTF VRP
 challenge. The kernel image and the kernel configuration can be found
 [here](/env).
 
-## Building the exploit
+## Building and running the exploit
 
 To build the exploit, execute the following command:
 ```
 make
+```
+
+Given that QEMU is installed, the exploit can be tested with:
+```
+make run
+```
+If KVM is unavailable, substitute the previous command with:
+```
+make run KVM=
 ```
 
 ## Contributing
