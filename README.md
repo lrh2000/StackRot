@@ -1,5 +1,10 @@
 # StackRot (CVE-2023-3269): Linux kernel privilege escalation vulnerability
 
+[![GitHub CI](https://github.com/lrh2000/StackRot/actions/workflows/ci.yml/badge.svg)][ci]
+[*(GitHub-CI-verified exploit)*][ci]
+
+ [ci]: https://github.com/lrh2000/StackRot/actions
+
 A flaw was found in the handling of stack expansion in the Linux kernel 6.1
 through 6.4, aka "Stack Rot". The maple tree, responsible for managing virtual
 memory areas, can undergo node replacement without properly acquiring the MM

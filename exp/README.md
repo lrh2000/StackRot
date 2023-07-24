@@ -1,5 +1,9 @@
 # Exploiting StackRot (CVE-2023-3269)
 
+[![GitHub CI](https://github.com/lrh2000/StackRot/actions/workflows/ci.yml/badge.svg)][ci]
+
+ [ci]: https://github.com/lrh2000/StackRot/actions
+
 This contains a Proof of Concept (PoC) exploit for the StackRot bug. For a
 detailed explanation of the vulnerability and a walkthrough of how this exploit
 was developed, please refer to [this](/).
@@ -8,6 +12,10 @@ The exploit specifically targets Linux kernel version 6.1.25. It is primarily
 used to acquire root privileges and escape sandboxes in the Google kCTF VRP
 challenge. The kernel image and the kernel configuration can be found
 [here](/env).
+
+The successful execution of the exploit, resulting in the acquisition of root
+privileges, is verified by the [GitHub CI][ci], which runs the exploit within
+QEMU using the specified kernel images.
 
 ## Building and running the exploit
 
@@ -24,6 +32,10 @@ If KVM is unavailable, substitute the previous command with:
 ```
 make run KVM=
 ```
+
+The most straightforward way to understand how this exploit operates without
+having to set up a local environment is by reviewing the GitHub CI pass
+procedure, which can be found [here][ci].
 
 ## Contributing
 
