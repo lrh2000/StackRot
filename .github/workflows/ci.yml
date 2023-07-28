@@ -1,0 +1,30 @@
+name: CI
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./exp
+    steps:
+    - name: Checkout the repository
+      uses: actions/checkout@v3
+    - name: Check the code format
+      run: make check
+    - name: Build the exploit
+      run: make
+    - name: Install QEMU
+      run: sudo apt-get install -y qemu-system-x86-64
+    - name: Run the exploit
+      id: test
+      continue-on-error: true
+      run: make run KVM=
+    - name: Retry to run the exploit
+      if: steps.test.outcome == 'failure'
+      run: make run KVM=
