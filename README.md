@@ -360,12 +360,11 @@ solutions are as follows:
     period will not end.
  4. The iteration task is deliberately prolonged, allowing the RCU grace period
     to expire. This is the chosen solution. If the current RCU grace period
-    surpasses RCU_TASK_IPI_DELAY (defaulting to 0.5 seconds), inter-processor
-    interrupts (IPIs) are dispatched to all CPUs to verify that they are not in
-    RCU critical sections. In the case of VMA iteration, the answer is
-    negative, signifying that the RCU grace period concludes and the maple node
-    is freed, effectively converting UAFBR into a genuine use-after-free (UAF)
-    scenario.
+    surpasses `jiffies_till_first_fqs` (defaulting to several jiffies), an
+    inter-processor interrupt (IPI) will be dispatched to the victim CPU and
+    trigger voluntary preemption. In the case of VMA iteration, the voluntary
+    preemption can make the RCU grace period conclude and free the maple node,
+    effectively converting UAFBR into a genuine use-after-free (UAF) scenario.
 
 One significant observation is that during VMA iteration for
 `/proc/[pid]/maps`, it generates the entire file path for file-mapped memory
