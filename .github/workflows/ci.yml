@@ -20,7 +20,9 @@ jobs:
     - name: Build the exploit
       run: make
     - name: Install QEMU
-      run: sudo apt-get install -y qemu-system-x86-64
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y qemu-system-x86-64
     - name: Run the exploit
       id: test
       continue-on-error: true
